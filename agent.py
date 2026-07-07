@@ -13,6 +13,8 @@ from tools import execute_code, load_dataframe
 load_dotenv()
 class AgentState(TypedDict):
     messages: Annotated[List, add_messages]
+    iteration_count: int
+
 
 
 tools = [execute_code]
@@ -31,13 +33,16 @@ def agent_node(state: AgentState):
     if not any(isinstance(m, SystemMessage) for m in messages):
         messages = [SystemMessage(content=SYSTEM_PROMPT)] + messages
     response = llm_with_tools.invoke(messages)
-    return {"messages": [response]}
+    current_count = state.get("iteration_count",0)
+    return {"messages": [response], "iteration_count": current_count + 1}
 
 
 tools_node = ToolNode(tools)
 
 def should_continue(state: AgentState):
     last_message = state["messages"][-1]
+    if state.get("iteration_count",0) >= 5:
+        return END
     if getattr(last_message,"tool_calls",None):
         return "tools"
     return END
@@ -53,8 +58,11 @@ app = graph.compile()
 
 def run_query(question: str, csv_path: str):
     load_dataframe(csv_path)
-    result = app.invoke({"messages": [("user", question)]})
-    return result["messages"][-1].content
+    result = app.invoke({"messages": [("user", question)], "iteration_count": 0})
+    final_message = result["messages"][-1]
+    if not final_message.content:
+        return "(Agent hit the iteration limit without producing a final answer.)"
+    return final_message.content
 
 
 if __name__ == "__main__":
