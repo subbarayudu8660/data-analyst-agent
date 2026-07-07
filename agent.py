@@ -7,7 +7,7 @@ from langgraph.prebuilt import ToolNode
 from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import SystemMessage
 
-from tools import execute_code, load_dataframe
+from tools import execute_code, load_dataframe, web_search
 
 
 load_dotenv()
@@ -17,7 +17,7 @@ class AgentState(TypedDict):
 
 
 
-tools = [execute_code]
+tools = [execute_code,web_search]
 llm = ChatAnthropic(model="claude-sonnet-5")
 llm_with_tools = llm.bind_tools(tools)
 
