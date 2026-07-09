@@ -4,8 +4,12 @@ import traceback
 import pandas as pd
 from langchain_core.tools import tool
 from tavily import TavilyClient
+import matplotlib
+matplotlib.use('Agg')  # Use a non-interactive backend for matplotlib
+import matplotlib.pyplot as plt
+import os
 
-_sandbox_globals = {"pd": pd}
+_sandbox_globals = {"pd": pd,"plt":plt}
 
 @tool
 def execute_code(code: str)->str:
@@ -55,4 +59,32 @@ def load_dataframe(path: str,name: str = "df") -> str:
     df = pd.read_csv(path)
     _sandbox_globals[name] = df
     return f"Loaded '{path}', into variable '{name}' with shape {df.shape}"
+
+@tool
+def create_chart(code: str, filename: str)-> str:
+    """
+    Create a data visualization using matplotlib. Write code using 'plt' (already
+    imported) and 'df' (the loaded dataframe, if relevant). Do NOT call plt.show().
+    End your code with plt.savefig() is handed automatically - just build the plot.
+    Provide a filename endingin .png (e.g. 'salary_by_department.png').
+    Use this only when the user explicitly wants to see a chart/graph/plot, not for
+    plain numeric answers - use execute_code for that.
+    """
+
+    if not filename.endswith(".png"):
+        filename += ".png"
+
+    os.makedirs("charts", exist_ok = True)
+    filepath = os.path.join("charts", filename)
+
+    try:
+        plt.figure(figsize=(8, 5))
+        exec(code, _sandbox_globals)
+        plt.tight_layout()
+        plt.savefig(filepath)
+        plt.close()
+        return f"Chart saved successfully to {filepath}"
+    except Exception:
+        plt.close()
+        return f"ERROR creating chart:\n{traceback.format_exc()}"
         

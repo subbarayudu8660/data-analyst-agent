@@ -8,7 +8,7 @@ from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import SystemMessage
 from langgraph.checkpoint.memory import MemorySaver
 
-from tools import execute_code, load_dataframe, web_search
+from tools import execute_code, load_dataframe, web_search, create_chart
 
 
 load_dotenv()
@@ -18,7 +18,7 @@ class AgentState(TypedDict):
 
 
 
-tools = [execute_code,web_search]
+tools = [execute_code,web_search, create_chart]
 llm = ChatAnthropic(model="claude-sonnet-5")
 llm_with_tools = llm.bind_tools(tools)
 
